@@ -7,8 +7,8 @@ workflows:
     jobs:
       - create_docker_image
       - execute:
-        requires:
-          - create_docker_image
+          requires:
+            - create_docker_image
 
 jobs:
   create_docker_image:
