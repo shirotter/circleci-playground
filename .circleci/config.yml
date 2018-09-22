@@ -23,8 +23,8 @@ jobs:
       - setup_remote_docker:
           version: 18.05.0-ce # stable-release
           docker_layer_caching: true # A paid account is required to access Docker Layer Caching.
-      - restore_cache:
-          key: v1-common-docker-image-{{ checksum "Dockerfile" }}
+      - restore_cache: &restore_docker_image_cache
+          key: &docker_image_cache_key v1-common-docker-image-{{ checksum "Dockerfile" }}
       - run:
           name: "Build docker image"
           command: |
@@ -34,7 +34,7 @@ jobs:
               mkdir -p /caches && docker save -o /caches/docker-image.tar.gz circleci-playground:1.0.0
             fi
       - save_cache:
-          key: v1-common-docker-image-{{ checksum "Dockerfile" }}
+          key: *docker_image_cache_key
           paths:
             - /caches/docker-image.tar.gz
 
@@ -49,8 +49,7 @@ jobs:
           name: "List docker images before restore_cache"
           command: |
             docker images
-      - restore_cache:
-          key: v1-common-docker-image-{{ checksum "Dockerfile" }}
+      - restore_cache: *restore_docker_image_cache
       - run:
           name: "Build docker image"
           command: |
