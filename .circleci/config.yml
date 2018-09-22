@@ -1,10 +1,9 @@
---- # Commons
+--- # CircleCI Configuration file
 default_job_env: &default_job_env
   working_directory: ~/playground
   docker:
     - image: docker:stable-git
 
---- # CircleCI Configuration file
 version: 2.0
 
 workflows:
