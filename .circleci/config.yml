@@ -1,9 +1,18 @@
---- # CircleCI Configuration file
+---
+### Common settings
 default_job_env: &default_job_env
   working_directory: ~/playground
   docker:
     - image: docker:stable-git
 
+default_remote_docker: &default_remote_docker
+  version: 18.05.0-ce # stable-release
+  docker_layer_caching: true # A paid account is required to access Docker Layer Caching.
+
+restore_docker_image_cache: &restore_docker_image_cache
+  key: &docker_image_cache_key v1-common-docker-image-{{ checksum "Dockerfile" }}
+
+### CircleCI Configuration file
 version: 2.0
 
 workflows:
@@ -20,11 +29,8 @@ jobs:
     <<: *default_job_env
     steps:
       - checkout
-      - setup_remote_docker:
-          version: 18.05.0-ce # stable-release
-          docker_layer_caching: true # A paid account is required to access Docker Layer Caching.
-      - restore_cache: &restore_docker_image_cache
-          key: &docker_image_cache_key v1-common-docker-image-{{ checksum "Dockerfile" }}
+      - setup_remote_docker: *default_remote_docker
+      - restore_cache: *restore_docker_image_cache
       - run:
           name: "Build docker image"
           command: |
@@ -42,9 +48,7 @@ jobs:
     <<: *default_job_env
     steps:
       - checkout
-      - setup_remote_docker:
-          version: 18.05.0-ce
-          docker_layer_caching: true
+      - setup_remote_docker: *default_remote_docker
       - run:
           name: "List docker images before restore_cache"
           command: |
