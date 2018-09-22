@@ -1,0 +1,70 @@
+
+version: 2.0
+
+workflows:
+  version: 2
+  build:
+    jobs:
+      - create_docker_image
+      - execute:
+        requires:
+          - create_docker_image
+
+jobs:
+  create_docker_image:
+    working_directory: ~/playground
+    docker:
+      - image: docker:stable-git
+    steps:
+      - checkout
+      - setup_remote_docker:
+          version: 18.05.0-ce # stable-release
+          docker_layer_caching: true # A paid account is required to access Docker Layer Caching.
+      - restore_cache:
+          key: common-docker-image-v1-{{ checksum "Dockerfile" }}-test-v1
+      - run:
+          name: "Build docker image"
+          command: |
+            set +o pipefail
+            if [[ ! -f /caches/docker-image.tar.gz ]]; then
+              time docker build --rm -t circleci-playground:1.0.0 .
+              mkdir -p /caches && docker save -o /caches/docker-image.tar.gz circleci-playground:1.0.0
+            fi
+      - save_cache:
+          key: common-docker-image-v1-{{ checksum "Dockerfile" }}-test-v1
+          paths:
+            - /caches/docker-image.tar.gz
+
+  execute:
+    working_directory: ~/playground
+    docker:
+      - image: docker:stable-git
+    steps:
+      - setup_remote_docker:
+          version: 18.05.0-ce
+          docker_layer_caching: true
+      - run:
+          name: "List docker images before restore_cache"
+          command: |
+            docker images
+      - restore_cache:
+          key: common-docker-image-v1-{{ checksum "Dockerfile" }}-test-v1
+      - run:
+          name: "List docker images after restore_cache"
+          command: |
+            docker images
+      - run:
+          name: "Build docker image"
+          command: |
+            set +o pipefail
+            if [[ -f /caches/docker-image.tar.gz ]]; then
+              echo "Load exists docker image"
+              time docker load -i /caches/docker-image.tar.gz
+            else
+              echo "Docker image cache was not found, so rebuld docker image"
+              time docker build --rm -t circleci-playground:1.0.0 .
+            fi
+      - run:
+          name: "Run docker container"
+          command: |
+            docker run --rm -it circleci-playground:1.0.0
